@@ -1,0 +1,26 @@
+{
+    "app": {
+        "title": "Ideal Budget",
+        "subtitle": "Your Smart AI Budget Coach"
+    },
+    "nav": {
+        "home": "Home",
+        "dashboard": "Dashboard",
+        "scanner": "Scan Bill",
+        "coach": "Smart Coach"
+    },
+    "home": {
+        "welcome": "Welcome back!",
+        "action_scan": "Scan Receipt",
+        "action_entering": "Enter Manually",
+        "recent_activity": "Recent Activity",
+        "no_activity": "No recent bills found. Start by scanning a receipt!"
+    },
+    "scanner": {
+        "title": "Receipt Scanner",
+        "instruction": "Take a photo or upload a receipt image.",
+        "analyzing": "Analyzing with Gemini AI...",
+        "success": "Bill categorized successfully!",
+        "save": "Save Bill"
+    }
+}
