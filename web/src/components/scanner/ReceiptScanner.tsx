@@ -5,11 +5,13 @@ import { Camera, Upload, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 import { analyzeReceipt } from '@/app/actions';
 import { db, type Bill } from '@/lib/db';
 import content from '@/locales/en.json';
+import { compressImage, validateFileSize } from '@/lib/imageCompression';
 
 export default function ReceiptScanner() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [result, setResult] = useState<Bill | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [uploadProgress, setUploadProgress] = useState<string>('');
     const inputRef = useRef<HTMLInputElement>(null);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -19,11 +21,30 @@ export default function ReceiptScanner() {
         setIsAnalyzing(true);
         setError(null);
         setResult(null);
-
-        const formData = new FormData();
-        formData.append('file', file);
+        setUploadProgress('');
 
         try {
+            // Validate file size (max 10MB before compression)
+            if (!validateFileSize(file, 10)) {
+                setError('File is too large. Maximum size is 10MB.');
+                setIsAnalyzing(false);
+                return;
+            }
+
+            let processedFile: File | Blob = file;
+
+            // Compress if file is larger than 2MB
+            if (file.size > 2 * 1024 * 1024) {
+                setUploadProgress('Compressing image...');
+                const compressed = await compressImage(file, 5, 1920);
+                processedFile = new File([compressed], file.name, { type: 'image/jpeg' });
+                setUploadProgress('');
+            }
+
+            setUploadProgress('Analyzing receipt...');
+            const formData = new FormData();
+            formData.append('file', processedFile);
+
             const data = await analyzeReceipt(formData);
 
             if (data.error) {
@@ -90,7 +111,9 @@ export default function ReceiptScanner() {
             {isAnalyzing && (
                 <div className="flex-center" style={{ flexDirection: 'column', gap: '1rem', minHeight: '200px' }}>
                     <Loader2 className="animate-spin" size={48} color="var(--color-secondary)" />
-                    <p className="gradient-text" style={{ fontWeight: 500 }}>{content.scanner.analyzing}</p>
+                    <p className="gradient-text" style={{ fontWeight: 500 }}>
+                        {uploadProgress || content.scanner.analyzing}
+                    </p>
                 </div>
             )}
 

@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Send, MessageSquare, User } from 'lucide-react';
+import { ArrowLeft, Send, Mic, Volume2, VolumeX } from 'lucide-react';
 import { db } from '@/lib/db';
 import { askCoach } from '@/app/actions';
+import RichChatMessage from '@/components/chat/RichChatMessage';
+import { useVoiceInput, useVoiceOutput } from '@/hooks/useVoice';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -13,11 +15,17 @@ interface Message {
 
 export default function CoachPage() {
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'assistant', content: 'Hello! I am your Ideal Budget Coach. Ask me anything about your spending, like "How much did I spend on groceries?" or "Show me spending trends".' }
+        { role: 'assistant', content: 'Hello! I am your Ideal Budget Coach. Ask me anything about your spending, like:\n\n• "How much did I spend on groceries?"\n• "Show me spending trends"\n• "Will I stay within budget?"\n• "Where am I spending the most?"' }
     ]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    const { isListening, isSupported: voiceInputSupported, startListening, stopListening } = useVoiceInput((transcript) => {
+        setInput(transcript);
+    });
+
+    const { isSpeaking, isSupported: voiceOutputSupported, speak, stop: stopSpeaking } = useVoiceOutput();
 
     useEffect(() => {
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -33,7 +41,7 @@ export default function CoachPage() {
         setLoading(true);
 
         try {
-            // 1. Fetch Context (All bills for now, optimized for Flash context window)
+            // Fetch Context (All bills for now)
             const allBills = await db.bills.toArray();
             const context = JSON.stringify(allBills.map(b => ({
                 date: b.date,
@@ -43,13 +51,19 @@ export default function CoachPage() {
                 items: b.items
             })));
 
-            // 2. Call Server Action
+            // Call Server Action
             const response = await askCoach(question, context);
 
             if (response.error) {
                 setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${response.error}` }]);
             } else {
-                setMessages(prev => [...prev, { role: 'assistant', content: response.text || "I couldn't generate an answer." }]);
+                const assistantMessage = response.text || "I couldn't generate an answer.";
+                setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+
+                // Auto-speak the response
+                if (voiceOutputSupported) {
+                    speak(assistantMessage);
+                }
             }
 
         } catch (err) {
@@ -60,13 +74,41 @@ export default function CoachPage() {
         }
     };
 
+    const handleVoiceInput = () => {
+        if (isListening) {
+            stopListening();
+        } else {
+            startListening();
+        }
+    };
+
     return (
         <div className="container" style={{ paddingTop: '2rem', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <header style={{ display: 'flex', alignItems: 'center', paddingBottom: '1rem' }}>
-                <Link href="/" style={{ marginRight: '1rem' }}>
-                    <ArrowLeft />
-                </Link>
-                <h1 style={{ fontSize: '1.5rem' }}>Smart Coach</h1>
+            <header style={{ display: 'flex', alignItems: 'center', paddingBottom: '1rem', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <Link href="/" style={{ marginRight: '1rem' }}>
+                        <ArrowLeft />
+                    </Link>
+                    <h1 style={{ fontSize: '1.5rem' }}>Smart Coach</h1>
+                </div>
+                {voiceOutputSupported && (
+                    <button
+                        onClick={isSpeaking ? stopSpeaking : undefined}
+                        style={{
+                            padding: '0.5rem',
+                            background: isSpeaking ? 'var(--color-accent)' : 'transparent',
+                            color: isSpeaking ? 'white' : 'var(--color-text-muted)',
+                            border: 'none',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: isSpeaking ? 'pointer' : 'default',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                        }}
+                    >
+                        {isSpeaking ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                    </button>
+                )}
             </header>
 
             <div className="glass-panel" style={{
@@ -79,35 +121,15 @@ export default function CoachPage() {
                 gap: '1rem'
             }}>
                 {messages.map((msg, i) => (
-                    <div key={i} style={{
-                        alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                        maxWidth: '80%',
-                        display: 'flex',
-                        gap: '0.5rem',
-                        flexDirection: msg.role === 'user' ? 'row-reverse' : 'row'
-                    }}>
-                        <div style={{
-                            minWidth: '32px', height: '32px', borderRadius: '50%',
-                            background: msg.role === 'user' ? 'var(--color-primary)' : 'var(--color-surface)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            border: '1px solid rgba(255,255,255,0.1)'
-                        }}>
-                            {msg.role === 'user' ? <User size={16} /> : <MessageSquare size={16} />}
-                        </div>
-                        <div style={{
-                            padding: '0.75rem 1rem',
-                            borderRadius: 'var(--radius-md)',
-                            background: msg.role === 'user' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
-                            color: 'var(--color-text-main)',
-                            lineHeight: '1.5'
-                        }}>
-                            {msg.content}
-                        </div>
-                    </div>
+                    <RichChatMessage
+                        key={i}
+                        content={msg.content}
+                        isUser={msg.role === 'user'}
+                    />
                 ))}
                 {loading && (
-                    <div style={{ alignSelf: 'flex-start', marginLeft: '3rem', color: 'var(--color-text-muted)' }}>
-                        Thinking...
+                    <div style={{ alignSelf: 'flex-start', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                        Analyzing your spending...
                     </div>
                 )}
                 <div ref={scrollRef} />
@@ -119,9 +141,35 @@ export default function CoachPage() {
                     className="glass-panel"
                     value={input}
                     onChange={e => setInput(e.target.value)}
-                    placeholder="Ask a question..."
-                    style={{ flex: 1, padding: '1rem', color: 'white', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-primary-glow)' }}
+                    placeholder={isListening ? "Listening..." : "Ask a question..."}
+                    style={{
+                        flex: 1,
+                        padding: '1rem',
+                        color: 'white',
+                        background: isListening ? 'rgba(139, 92, 246, 0.2)' : 'rgba(0,0,0,0.3)',
+                        border: isListening ? '2px solid var(--color-primary)' : '1px solid var(--color-primary-glow)'
+                    }}
                 />
+                {voiceInputSupported && (
+                    <button
+                        type="button"
+                        onClick={handleVoiceInput}
+                        style={{
+                            background: isListening ? 'var(--color-accent)' : 'var(--color-primary)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 'var(--radius-md)',
+                            width: '3.5rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            animation: isListening ? 'pulse 1.5s infinite' : 'none'
+                        }}
+                    >
+                        <Mic size={20} />
+                    </button>
+                )}
                 <button type="submit" disabled={loading} style={{
                     background: 'var(--color-primary)',
                     color: 'white',
@@ -129,11 +177,19 @@ export default function CoachPage() {
                     borderRadius: 'var(--radius-md)',
                     width: '3.5rem',
                     cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: loading ? 0.6 : 1
                 }}>
                     <Send size={20} />
                 </button>
             </form>
+
+            <style jsx>{`
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                }
+            `}</style>
         </div>
     );
 }

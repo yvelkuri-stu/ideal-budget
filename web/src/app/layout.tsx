@@ -1,4 +1,7 @@
 import type { Metadata, Viewport } from 'next';
+import { ClerkProvider } from '@clerk/nextjs';
+import { getUserPreferences } from '@/lib/actions/preferences';
+import ThemeProvider from '@/components/ThemeProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,18 +17,26 @@ export const viewport: Viewport = {
   themeColor: '#0f172a',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const prefs = await getUserPreferences();
+
   return (
-    <html lang="en">
-      <body>
-        <main className="app-shell">
-          {children}
-        </main>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body>
+          <ThemeProvider
+            initialTheme={prefs.theme}
+            initialAnimation={prefs.animationSpeed}
+          />
+          <main className="app-shell">
+            {children}
+          </main>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

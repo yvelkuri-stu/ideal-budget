@@ -1,7 +1,6 @@
-"use client";
-
 import Link from 'next/link';
-import { Camera, Plus, BarChart2, MessageSquare } from 'lucide-react';
+import { Camera, Plus, BarChart2, MessageSquare, Settings } from 'lucide-react';
+import { UserButton } from '@clerk/nextjs';
 import content from '@/locales/en.json';
 import RecentBills from '@/components/dashboard/RecentBills';
 import SpendingChart from '@/components/dashboard/SpendingChart';
@@ -10,7 +9,13 @@ export default function Home() {
   return (
     <div className="container" style={{ paddingTop: '2rem', paddingBottom: '6rem' }}>
       {/* Header */}
-      <header className="flex-center" style={{ flexDirection: 'column', marginBottom: '3rem' }}>
+      <header className="flex-center" style={{ flexDirection: 'column', marginBottom: '3rem', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <Link href="/settings" style={{ color: 'var(--color-text-muted)', transition: 'color var(--transition-speed)' }}>
+            <Settings size={24} />
+          </Link>
+          <UserButton afterSignOutUrl="/" />
+        </div>
         <h1 className="gradient-text" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
           {content.app.title}
         </h1>

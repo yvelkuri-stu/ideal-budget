@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Bill {
+  id          Int      @id @default(autoincrement())
+  amount      Float
+  currency    String
+  date        DateTime
+  storeName   String
+  category    String
+  items       String   // Stored as JSON string
+  receiptImage Bytes?  // Base64 or raw bytes
+  userId      String
+  createdAt   DateTime @default(now())
+}
+
+model Store {
+  id        Int      @id @default(autoincrement())
+  name      String
+  lastVisit DateTime?
+  userId    String
+  
+  @@unique([name, userId])
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  role      String   // 'user' | 'assistant'
+  content   String
+  timestamp DateTime @default(now())
+  userId    String
+}

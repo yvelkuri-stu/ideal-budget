@@ -3,29 +3,97 @@
 :root {
   /* Premium Color Palette (Violet/Teal/Dark) */
   --font-sans: 'Outfit', sans-serif;
-  
-  --color-bg: #0f172a; /* Slate 900 */
-  --color-surface: #1e293b; /* Slate 800 */
+
+  --color-bg: #0f172a;
+  /* Slate 900 */
+  --color-surface: #1e293b;
+  /* Slate 800 */
   --color-surface-translucent: rgba(30, 41, 59, 0.7);
-  
-  --color-primary: #8b5cf6; /* Violet 500 */
+
+  --color-primary: #8b5cf6;
+  /* Violet 500 */
   --color-primary-glow: rgba(139, 92, 246, 0.5);
-  
-  --color-secondary: #06b6d4; /* Cyan 500 */
-  
-  --color-text-main: #f8fafc; /* Slate 50 */
-  --color-text-muted: #94a3b8; /* Slate 400 */
-  
-  --color-accent: #f43f5e; /* Rose 500 (for alerts/high bills) */
-  --color-success: #10b981; /* Emerald 500 */
+
+  --color-secondary: #06b6d4;
+  /* Cyan 500 */
+
+  --color-text-main: #f8fafc;
+  /* Slate 50 */
+  --color-text-muted: #94a3b8;
+  /* Slate 400 */
+
+  --color-accent: #f43f5e;
+  /* Rose 500 (for alerts/high bills) */
+  --color-success: #10b981;
+  /* Emerald 500 */
 
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 20px;
-  
+
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-glow: 0 0 20px var(--color-primary-glow);
+
+  /* Animation speeds */
+  --transition-speed: 0.2s;
 }
+
+/* Theme: Ocean Blue */
+html[data-theme="ocean-blue"] {
+  --color-primary: #06b6d4;
+  /* Cyan 500 */
+  --color-primary-glow: rgba(6, 182, 212, 0.5);
+  --color-secondary: #0ea5e9;
+  /* Sky 500 */
+  --color-accent: #3b82f6;
+  /* Blue 500 */
+}
+
+/* Theme: Sunset Orange */
+html[data-theme="sunset-orange"] {
+  --color-primary: #f97316;
+  /* Orange 500 */
+  --color-primary-glow: rgba(249, 115, 22, 0.5);
+  --color-secondary: #fb923c;
+  /* Orange 400 */
+  --color-accent: #ef4444;
+  /* Red 500 */
+}
+
+/* Theme: Forest Green */
+html[data-theme="forest-green"] {
+  --color-primary: #10b981;
+  /* Emerald 500 */
+  --color-primary-glow: rgba(16, 185, 129, 0.5);
+  --color-secondary: #14b8a6;
+  /* Teal 500 */
+  --color-accent: #22c55e;
+  /* Green 500 */
+}
+
+/* Theme: Minimal Dark */
+html[data-theme="minimal-dark"] {
+  --color-primary: #e5e7eb;
+  /* Gray 200 */
+  --color-primary-glow: rgba(229, 231, 235, 0.3);
+  --color-secondary: #9ca3af;
+  /* Gray 400 */
+  --color-accent: #6b7280;
+  /* Gray 500 */
+  --color-text-main: #f9fafb;
+  /* Gray 50 */
+}
+
+/* Animation Speed: Slow */
+html[data-animation="slow"] {
+  --transition-speed: 0.4s;
+}
+
+/* Animation Speed: Fast */
+html[data-animation="fast"] {
+  --transition-speed: 0.1s;
+}
+
 
 * {
   box-sizing: border-box;
@@ -33,7 +101,8 @@
   margin: 0;
 }
 
-html, body {
+html,
+body {
   background-color: var(--color-bg);
   color: var(--color-text-main);
   font-family: var(--font-sans);
@@ -77,6 +146,8 @@ a {
 }
 
 /* Animations included via Framer Motion, but base transitions here */
-button, input, a {
+button,
+input,
+a {
   transition: all 0.2s ease-in-out;
 }

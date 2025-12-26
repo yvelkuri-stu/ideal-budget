@@ -1,36 +1,45 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Save, AlertCircle } from 'lucide-react';
-import { db } from '@/lib/db';
+import { ArrowLeft, Save, AlertCircle, Users, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { createBill } from '@/lib/actions/bills';
+import { getUserHousehold } from '@/lib/actions/household';
 
 export default function AddBillPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [hasHousehold, setHasHousehold] = useState(false);
     const [formData, setFormData] = useState({
         storeName: '',
         amount: '',
         date: new Date().toISOString().split('T')[0],
         category: 'Groceries',
-        sharedWith: ''
+        notes: '',
+        isPersonal: false // false = household bill, true = personal bill
     });
+
+    // Check if user has a household
+    useEffect(() => {
+        getUserHousehold().then(household => {
+            setHasHousehold(!!household);
+        });
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
         try {
-            await db.bills.add({
+            await createBill({
                 storeName: formData.storeName,
                 amount: parseFloat(formData.amount),
                 currency: 'USD',
                 date: formData.date,
                 category: formData.category,
-                items: [], // Manual entry usually doesn't include line items unless detailed
-                sharedWith: formData.sharedWith.split(',').map(s => s.trim()).filter(s => s.length > 0),
-                createdAt: Date.now()
+                items: [],
+                isPersonal: formData.isPersonal, // Pass personal flag
             });
 
             router.push('/');
@@ -107,16 +116,69 @@ export default function AddBillPage() {
                     </select>
                 </div>
 
+                {hasHousehold && (
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--color-text-muted)' }}>Bill Type</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, isPersonal: false })}
+                                className="glass-panel"
+                                style={{
+                                    flex: 1,
+                                    padding: '1rem',
+                                    background: !formData.isPersonal ? 'var(--color-primary)' : 'rgba(0,0,0,0.2)',
+                                    color: 'white',
+                                    border: !formData.isPersonal ? '2px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: 'var(--radius-md)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem'
+                                }}
+                            >
+                                <Users size={20} />
+                                Household
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, isPersonal: true })}
+                                className="glass-panel"
+                                style={{
+                                    flex: 1,
+                                    padding: '1rem',
+                                    background: formData.isPersonal ? 'var(--color-primary)' : 'rgba(0,0,0,0.2)',
+                                    color: 'white',
+                                    border: formData.isPersonal ? '2px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: 'var(--radius-md)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem'
+                                }}
+                            >
+                                <User size={20} />
+                                Personal
+                            </button>
+                        </div>
+                        <small style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block' }}>
+                            {formData.isPersonal ? 'Only you will see this bill' : 'All household members will see this bill'}
+                        </small>
+                    </div>
+                )}
+
                 <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--color-text-muted)' }}>Shared With (Friends/Spouse)</label>
-                    <input
-                        type="text"
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--color-text-muted)' }}>Notes (Optional)</label>
+                    <textarea
                         className="glass-panel"
-                        style={{ width: '100%', padding: '1rem', color: 'white', background: 'rgba(0,0,0,0.2)' }}
-                        value={formData.sharedWith}
-                        onChange={e => setFormData({ ...formData, sharedWith: e.target.value })}
-                        placeholder="e.g. Alice, Bob"
+                        style={{ width: '100%', padding: '1rem', color: 'white', background: 'rgba(0,0,0,0.2)', minHeight: '80px', fontFamily: 'inherit', resize: 'vertical' }}
+                        value={formData.notes}
+                        onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                        placeholder="e.g. milk, mutton, asparagus"
                     />
+                    <small style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Add details about what you bought</small>
                 </div>
 
                 <button type="submit" disabled={loading} style={{

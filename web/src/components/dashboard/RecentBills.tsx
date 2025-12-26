@@ -1,9 +1,7 @@
-"use client";
-
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
-import { ShoppingBag, Utensils, Zap, ShoppingCart, Trash2, Edit2 } from "lucide-react";
+import { getBills, deleteBill } from "@/lib/actions/bills";
+import { ShoppingBag, Utensils, Zap, ShoppingCart, Edit2 } from "lucide-react";
 import Link from "next/link";
+import DeleteButton from "./DeleteButton";
 
 const getIcon = (category: string) => {
     switch (category) {
@@ -14,32 +12,8 @@ const getIcon = (category: string) => {
     }
 };
 
-import { useState } from "react";
-
-export default function RecentBills() {
-    const [searchTerm, setSearchTerm] = useState('');
-
-    const bills = useLiveQuery(async () => {
-        let collection = db.bills.orderBy('date').reverse();
-        const all = await collection.toArray();
-
-        if (!searchTerm) return all.slice(0, 10);
-
-        const lowerTerm = searchTerm.toLowerCase();
-        return all.filter(b =>
-            b.storeName.toLowerCase().includes(lowerTerm) ||
-            b.category.toLowerCase().includes(lowerTerm) ||
-            (b.sharedWith && b.sharedWith.some(s => s.toLowerCase().includes(lowerTerm)))
-        );
-    }, [searchTerm]);
-
-    const handleDelete = async (id: number) => {
-        if (confirm('Are you sure you want to delete this bill?')) {
-            await db.bills.delete(id);
-        }
-    };
-
-    if (!bills) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading activity...</div>;
+export default async function RecentBills({ filter }: { filter?: 'all' | 'personal' | 'household' }) {
+    const bills = await getBills(10, filter);
 
     if (bills.length === 0) {
         return (
@@ -51,16 +25,7 @@ export default function RecentBills() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <input
-                type="text"
-                placeholder="Search bills, tags..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="glass-panel"
-                style={{ width: '100%', padding: '0.75rem', color: 'white', background: 'rgba(0,0,0,0.3)', marginBottom: '0.5rem' }}
-            />
-
-            {bills.map(bill => (
+            {bills.slice(0, 10).map(bill => (
                 <div key={bill.id} className="glass-panel" style={{
                     padding: '1rem',
                     display: 'flex',
@@ -78,7 +43,19 @@ export default function RecentBills() {
                         </div>
                         <div>
                             <h4 style={{ fontWeight: 600 }}>{bill.storeName}</h4>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{bill.date}</span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                {new Date(bill.date).toLocaleDateString()}
+                                {bill.addedByName && bill.addedByName !== 'Unknown' && (
+                                    <span style={{ marginLeft: '0.5rem' }}>
+                                        • {bill.addedByName}
+                                    </span>
+                                )}
+                            </span>
+                            {bill.notes && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
+                                    {bill.notes}
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -88,12 +65,7 @@ export default function RecentBills() {
                         <Link href={`/edit/${bill.id}`}>
                             <div style={{ cursor: 'pointer', color: 'var(--color-text-muted)' }}><Edit2 size={16} /></div>
                         </Link>
-                        <button
-                            onClick={() => bill.id && handleDelete(bill.id)}
-                            style={{ background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}
-                        >
-                            <Trash2 size={16} />
-                        </button>
+                        <DeleteButton billId={bill.id} />
                     </div>
                 </div>
             ))}

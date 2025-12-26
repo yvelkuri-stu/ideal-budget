@@ -3,10 +3,18 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 
 export default function SpendingChart() {
     const bills = useLiveQuery(() => db.bills.toArray());
+    const [primaryColor, setPrimaryColor] = useState('#8b5cf6');
+
+    // Get the current theme's primary color from CSS variables
+    useEffect(() => {
+        const color = getComputedStyle(document.documentElement)
+            .getPropertyValue('--color-primary').trim();
+        if (color) setPrimaryColor(color);
+    }, []);
 
     const data = useMemo(() => {
         if (!bills) return [];
@@ -37,8 +45,8 @@ export default function SpendingChart() {
                 <AreaChart data={data}>
                     <defs>
                         <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
-                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                            <stop offset="5%" stopColor={primaryColor} stopOpacity={0.8} />
+                            <stop offset="95%" stopColor={primaryColor} stopOpacity={0} />
                         </linearGradient>
                     </defs>
                     <XAxis dataKey="date" hide />
@@ -46,7 +54,7 @@ export default function SpendingChart() {
                         contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }}
                         itemStyle={{ color: '#fff' }}
                     />
-                    <Area type="monotone" dataKey="amount" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorAmount)" />
+                    <Area type="monotone" dataKey="amount" stroke={primaryColor} fillOpacity={1} fill="url(#colorAmount)" />
                 </AreaChart>
             </ResponsiveContainer>
         </div>

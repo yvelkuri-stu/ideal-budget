@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Household {
+  id          Int               @id @default(autoincrement())
+  name        String            // "Smith Family", "Our Budget"
+  ownerId     String            // Creator's Clerk userId
+  members     HouseholdMember[]
+  bills       Bill[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model HouseholdMember {
+  id           Int       @id @default(autoincrement())
+  householdId  Int
+  household    Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  userId       String    // Clerk userId
+  displayName  String    // "John", "Wife", "Sarah"
+  role         String    @default("member") // "owner" | "member"
+  joinedAt     DateTime  @default(now())
+  
+  @@unique([householdId, userId])
+}
+
+model Bill {
+  id            Int        @id @default(autoincrement())
+  amount        Float
+  currency      String
+  date          DateTime
+  storeName     String
+  category      String
+  items         String     // Stored as JSON string
+  receiptImage  Bytes?     // Base64 or raw bytes
+  userId        String     // Original owner (for personal bills)
+  notes         String?    // User comments like "milk, mutton, asparagus"
+  householdId   Int?       // Optional: belongs to household
+  household     Household? @relation(fields: [householdId], references: [id], onDelete: SetNull)
+  addedBy       String     // userId who added this bill
+  addedByName   String     // Display name of person who added
+  createdAt     DateTime   @default(now())
+}
+
+model Store {
+  id        Int      @id @default(autoincrement())
+  name      String
+  lastVisit DateTime?
+  userId    String
+  
+  @@unique([name, userId])
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  role      String   // 'user' | 'assistant'
+  content   String
+  timestamp DateTime @default(now())
+  userId    String
+}
+
+model UserPreferences {
+  id             Int      @id @default(autoincrement())
+  userId         String   @unique
+  theme          String   @default("purple-glow")
+  animationSpeed String   @default("normal")
+  currency       String   @default("USD")
+  locale         String   @default("en-US")
+  updatedAt      DateTime @updatedAt
+}
